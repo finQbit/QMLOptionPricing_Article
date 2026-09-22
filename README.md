@@ -165,10 +165,12 @@ attempt to retrain:
 |---|---|
 | `SPECIFICATION.md` | this document |
 | `finqbit_parameters.txt` | the 36 trained parameters |
+| `finqbit_multi_parameters.txt` | the 40 trained parameters of the multi-observable readout of Section 7: 12 encoding scalers, 24 U3 angles, 4 linear-head coefficients. Same ansatz and the same 8 $CX$ gates as the released model; both qubits are measured |
 | `classical_baselines.jl` | standalone implementation of every classical model |
 | `data/bs_train.csv` | training set, 500 points |
 | `data/bs_test.csv` | original test set, 100 points |
 | `data/bs_eval_10000.csv` | enlarged evaluation set, 10,000 points |
+| `data/bs_monitor_200.csv` | monitoring set used only as the stopping criterion for the Section 7 campaign, generated separately and verified to share no point with the training, test or evaluation sets |
 | `circuits/standard/finqbit_m*.qasm` | the finQbit circuit as executed on hardware, one per benchmark point `m = 0.8 .. 1.2`. Two qubits, 8 $CX$ gates, trained angles written into the gates |
 | `circuits/compressed_u4/u4_m*.qasm` | the same five points after the $U(4)$ compression of the ansatz-optimisation section, 3 $CX$ gates each. These are compiled per input point and are therefore not a pricing function: each one reproduces the circuit output at its own $m$ only |
 | `hardware/raw/<backend>/task_NNN.json` | the device return for every individual execution, 300 files across the three AWS backends. Each carries the submitted OpenQASM, the device-compiled program where the backend returns one, the shot count, the moneyness label and reference price, and a time offset in seconds from the first task of that campaign so that the ordering needed for drift analysis is preserved. IQM Garnet and Rigetti Ankaa-3 return per-shot bitstrings in `measurements`; IonQ Forte returns only the final distribution, in `measurementProbabilities`, which is why the shot-convergence analysis for that backend is a Monte Carlo reconstruction rather than a resampling of recorded shots. Applying $\hat{C}=\max(0,\langle Z_0\rangle)$ to these files reproduces every value in the corresponding `_repetitions.csv` exactly. Cloud task identifiers, account and region metadata and absolute timestamps are not included |
@@ -178,3 +180,178 @@ attempt to retrain:
 The hardware records are sufficient to reproduce every hardware table in the
 paper without device access. Re-running the devices would not reproduce them in
 any case, since it would not reproduce the calibration state.
+
+## 7. Erratum: extended readout and a second parameter set
+
+Added after submission. **Every number in the paper stands.**
+`finqbit_parameters.txt` reproduces them to five decimals (R² = 0.987210,
+MAE = 0.009651, RMSE = 0.012901 on the 10,000-point evaluation set).
+
+This section adds a **second trained parameter set** and the **full statistical
+battery** requested in review. The released model of Sections 1-6 is unchanged.
+
+### 7.1 What the second set is
+
+`finqbit_multi_parameters.txt` — the same ansatz as Sections 3 and 4, with one
+difference: **both qubits are measured**, and three expectation values feed a
+linear readout head.
+
+| | released model | multi-observable readout |
+|---|---|---|
+| measurement | `q0` only | **`q0` and `q1`** |
+| readout | ⟨Z₀⟩ | ⟨Z₀⟩, ⟨Z₁⟩, ⟨Z₀Z₁⟩ |
+| parameters | 36 | 40 (36 + 4 head) |
+| **CX gates** | **8** | **8** |
+| depth | — | unchanged |
+
+```
+z    = b + w_Z0·⟨Z₀⟩ + w_Z1·⟨Z₁⟩ + w_Z0Z1·⟨Z₀Z₁⟩
+C/K  = max(0, z)
+```
+
+The rectifier is retained, and deliberately so: it is what lets the model emit
+an **exact zero** deep out of the money, which no smooth output map can do.
+Section 1 already notes that omitting it does not reproduce the published
+results; that remains true here.
+
+Expectation values are recovered from the joint distribution over both qubits,
+with `b0` the first character of the bitstring:
+
+```
+⟨Z₀⟩   = (p00 + p01) - (p10 + p11)
+⟨Z₁⟩   = (p00 + p10) - (p01 + p11)
+⟨Z₀Z₁⟩ =  p00 - p01 - p10 + p11
+```
+
+**The hardware cost is unchanged.** Same gates, same depth, same shot count —
+measuring both qubits instead of one costs nothing, because the circuit has to
+be executed either way. The fidelity budget `(1-ε)^N_CX` is identical.
+
+Note that the AWS records already in `hardware/raw/` contain the **full
+two-qubit distribution** (`measuredQubits: [0, 1]`), so ⟨Z₁⟩ and ⟨Z₀Z₁⟩ can be
+computed from the released files for the published parameter vector without any
+new device access. The IBM circuits in `circuits/standard/` declare a
+single classical bit, so the same is not possible for those.
+
+### 7.2 How much the readout alone contributes
+
+Measured at a **frozen, untrained** circuit: the best linear head is fitted by
+least squares, once on ⟨Z₀⟩ alone and once on all three observables. Circuit
+parameters are bit-identical in both cases and both sides receive an optimal
+fit, so the difference cannot come from the extra parameters or from the
+optimiser.
+
+| | ⟨Z₀⟩ alone | all three | R² gain |
+|---|---|---|---|
+| 10 seeds, held-out slice | +0.1438 | +0.5845 | **+0.4407 ± 0.2491** |
+
+⟨Z₀Z₁⟩ carries the decisive part: it is the only place where the entanglement
+generated by the `CX` blocks becomes directly visible in the output.
+
+### 7.3 Protocol
+
+| set | size | role |
+|---|---|---|
+| `data/bs_train.csv` | 500 | gradient only |
+| `data/bs_monitor_200.csv` | 200 | **stopping criterion only** |
+| `data/bs_test.csv` | 100 | touched once, after training |
+| `data/bs_eval_10000.csv` | 10,000 | touched once, after training |
+
+The monitoring set is generated separately and verified to share **no point**
+with the test or evaluation sets. Training stops on an R² plateau measured on
+that set; the test set has no influence whatsoever on when training stops.
+
+Campaign: 20 independent initialisations, 16 converged.
+
+### 7.4 Results
+
+Evaluation set of 10,000 points, generated independently of and later than
+training.
+
+| | R² | MAE [IV pts] | p95 [pts] | PW 1 pt | PW 2 pts | arbitrage | RMSLE | BIC |
+|---|---|---|---|---|---|---|---|---|
+| released, 36 par. | 0.98721 | 2.57 | 6.92 | 28.2% | 50.0% | 5.42% | 0.0108 | -86677 |
+| multi, best seed | **0.99527** | 1.53 | 4.28 | 45.6% | 72.3% | **3.90%** | 0.0068 | **-96595** |
+| multi, 16-run ensemble | 0.99485 | **1.51** | 4.45 | **49.5%** | **73.9%** | 5.01% | 0.0072 | -95740 |
+
+Column meanings, ordered by what a practitioner reads first:
+
+- **MAE [IV pts]** — error converted to volatility points through vega at the
+  reference point (m=1, T=1, r=0.05, σ=0.2; vega = 0.3752). This is the only
+  unit in which the model's usefulness can be judged. 2.57 → 1.51 is **41% less
+  error**.
+- **PW 1 pt** — share of quotes landing within one volatility point, roughly a
+  typical bid-ask spread on liquid index options. 28.2% → 49.5%.
+- **p95** — error below which 95% of quotes fall. A model with a good mean and
+  a heavy tail is worse than its mean suggests.
+- **arbitrage** — share of quotes violating `C ≥ max(0, m - e^{-rT})`. A
+  different kind of failure from inaccuracy, and worth reporting separately.
+- **RMSLE** — relative error; surfaces the cheap options that RMSE drowns.
+- **BIC** — parameter-count penalty; lower is better, despite 40 parameters
+  against 36.
+
+**Distribution over seeds, not a single run.** Of 20 initialisations, 16 reached
+the plateau criterion:
+
+```
+R² = 0.99223 ± 0.00201      (min 0.98590, max 0.99536)
+one-sample t against the released vector:  t = +10.02
+```
+
+The remaining four runs are **not failures**: they exhausted a 40-epoch budget
+without diverging or collapsing. One of them reached R² = 0.99536, the highest
+of the whole campaign. Dead runs: **zero**.
+
+**By moneyness regime.** Quality is now level across the domain:
+
+| | OTM | ATM | ITM |
+|---|---|---|---|
+| released | 0.98466 | 0.98378 | 0.97308 |
+| multi | 0.99259 | 0.99194 | **0.99275** |
+
+**The five hardware benchmark points** (T = 1, r = 0.05, σ = 0.2), the hardest
+region of the domain because price curvature peaks there:
+
+| m | Black-Scholes | multi | error [pts] | released, error [pts] |
+|---|---|---|---|---|
+| 0.80 | 0.018594 | 0.009424 | 2.44 | 4.96 |
+| 0.90 | 0.050912 | 0.055000 | 1.09 | 1.61 |
+| 1.00 | 0.104506 | 0.115854 | 3.02 | 5.53 |
+| 1.10 | 0.176630 | 0.188453 | 3.15 | 5.50 |
+| 1.20 | 0.261690 | 0.267899 | 1.65 | 2.61 |
+
+Mean **2.27 pts** against **4.04 pts**. Note that the error at these five points
+is about 1.5x the average over the full evaluation set (1.53 pts), which is why
+a global R² and the errors observed on hardware differ in scale.
+
+**Against the classical baselines**, on the same 100-point test set as the
+classical tables of the paper:
+
+| model | parameters | R² |
+|---|---|---|
+| OLS | 5 | 0.93291 |
+| XGBoost | — | 0.97854 |
+| released finQbit | 36 | 0.98696 |
+| **multi, best seed** | **40** | **0.99507** |
+| MLP 4→6 tanh→1 | 37 | 0.99491 ± 0.00214 |
+
+On this set the multi-observable readout matches a small neural network of
+comparable parameter count, at eight two-qubit gates.
+
+### 7.5 Limits of the above
+
+1. **The best-seed figure is optimistic.** Selecting the best of 16 is itself a
+   form of selection. The unbiased description of the architecture is the
+   distribution, 0.99223 ± 0.00201, not 0.99527.
+2. **The 40-epoch cap truncated the distribution.** Four runs were stopped by
+   budget rather than convergence; a higher cap would likely raise the mean.
+3. **Half the circuit parameters may not need training.** Freezing 18 of the 36
+   circuit parameters at their random initialisation gave results
+   indistinguishable from full training (`t = +0.70`, n = 10), with half the
+   spread across seeds. Ten seeds is too few to state this firmly.
+
+### 7.6 Files
+
+The two files this section adds, `finqbit_multi_parameters.txt`
+and `data/bs_monitor_200.csv`, are listed with the rest of the release in
+Section 6.
