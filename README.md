@@ -12,6 +12,8 @@ implementation.
 
 ## 1. Register and readout
 
+This section specifies the model as presented in the paper.
+
 - **2 qubits**, labelled `q0` and `q1`.
 - Initial state `|00>`.
 - Measurement on **`q0` only**.
@@ -27,10 +29,17 @@ implementation.
   C_pred = max(0, <Z_0>)
   ```
 
-  This step is **part of the model**, not a display convention. It is responsible
-  for the positive bias in the deep out-of-the-money region, for the vanishing
-  training gradient there, and for the saturated hardware estimates reported in
-  the paper. Omitting it does not reproduce the published results.
+**Erratum.** A second parameter set, released with this repository, leaves the
+circuit untouched and changes only the readout: both qubits are measured, and
+three expectation values are taken from the same measurement record,
+`<Z_0>`, `<Z_1>` and the correlator `<Z_0 Z_1>`, combined by a linear head
+fitted after measurement.
+
+```
+C_pred = max(0, b + w_0*<Z_0> + w_1*<Z_1> + w_01*<Z_0 Z_1>)
+```
+
+No extra gates and no extra shots. Section 7 covers it.
 
 ## 2. Inputs
 
@@ -69,10 +78,6 @@ measure q0
 
 Totals: **8 CX gates**, **8 U3 gates**, **12 single-axis encoding rotations**,
 **36 trainable parameters**.
-
-`U3` follows the standard three-angle convention `U3(theta, phi, lambda)` as used
-by Qiskit; the authors' library exports directly to `qc.u3(theta, phi, lambda, qubit)`,
-and the released OpenQASM circuits were produced through that path.
 
 ## 4. Parameters
 
@@ -122,17 +127,9 @@ the paper uses exactly the pairs `(m, sigma)`, `(t, r)`, `(m, t)`, `(r, sigma)`.
 ### 4.3 Flat parameter order
 
 Frameworks that bind circuit parameters positionally consume them in gate
-declaration order, which for this circuit is:
-
-```
-w[1:6]                                                  # W1
-s1[1]*m , s1[4]*sigma , s1[2]*t , s1[3]*r               # S1
-w[7:12]                                                 # W2
-s2[2]*t , s2[1]*m     , s2[3]*r , s2[4]*sigma           # S2
-w[13:18]                                                # W3
-s3[1]*m , s3[2]*t     , s3[3]*r , s3[4]*sigma           # S3
-w[19:24]                                                # W4
-```
+declaration order, not in the order of the file above. For this circuit that
+order is the sequence of Section 3 read with the two tables of 4.1 and 4.2:
+`W1`, `S1`, `W2`, `S2`, `W3`, `S3`, `W4`.
 
 ## 5. Training configuration
 
@@ -214,10 +211,8 @@ was first established on the Heston basket models and carried over from there.
 What this section adds is the measurement of what it is worth on Black-Scholes,
 where a full seed campaign and a classical comparison are cheap enough to run.
 
-The rectifier is retained, and deliberately so: it is what lets the model emit
-an **exact zero** deep out of the money, which no smooth output map can do.
-Section 1 already notes that omitting it does not reproduce the published
-results; that remains true here.
+The rectifier is retained: it is what lets the model emit an **exact zero**
+deep out of the money, which no smooth output map can do.
 
 Expectation values are recovered from the joint distribution over both qubits,
 with `b0` the first character of the bitstring:
