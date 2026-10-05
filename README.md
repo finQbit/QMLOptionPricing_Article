@@ -195,11 +195,6 @@ z    = b + w_Z0·⟨Z₀⟩ + w_Z1·⟨Z₁⟩ + w_Z0Z1·⟨Z₀Z₁⟩
 C/K  = max(0, z)
 ```
 
-This readout is not new work: reading three observables through a linear head
-was first established on the Heston basket models and carried over from there.
-What this section adds is the measurement of what it is worth on Black-Scholes,
-where a full seed campaign and a classical comparison are cheap enough to run.
-
 The rectifier is retained: it is what lets the model emit an **exact zero**
 deep out of the money, which no smooth output map can do.
 

@@ -259,10 +259,6 @@ end
 # This costs no extra gates and no extra shots; the three numbers are already
 # present in any two-qubit measurement record. Parameter count 36 -> 40.
 #
-# The readout itself is not new work. It was established first on the Heston
-# basket models and carried over; what is measured here is what it is worth on
-# Black-Scholes, where a full seed campaign is cheap enough to run.
-#
 # TRAINING AND EVALUATION DATA ARE THE PUBLISHED ONES:
 #
 #     training    bs_train.csv         500 rows, all of them
