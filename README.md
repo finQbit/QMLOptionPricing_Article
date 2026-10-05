@@ -245,8 +245,7 @@ training.
 | | R² | MAE [IV pts] | p95 [pts] | PW 1 pt | PW 2 pts | arbitrage | RMSLE |
 |---|---|---|---|---|---|---|---|
 | ⟨Z₀⟩, 36 par. | 0.98721 | 2.57 | 6.92 | 28.2% | 50.0% | 5.42% | 0.0108 |
-| ⟨Z₀⟩, ⟨Z₁⟩, ⟨Z₀Z₁⟩, 40 par. | **0.99527** | 1.53 | 4.28 | 45.6% | 72.3% | **3.90%** | 0.0068 |
-| ensemble of 16 such runs | 0.99485 | **1.51** | 4.45 | **49.5%** | **73.9%** | 5.01% | 0.0072 |
+| ⟨Z₀⟩, ⟨Z₁⟩, ⟨Z₀Z₁⟩, 40 par. | 0.99527 | 1.53 | 4.28 | 45.6% | 72.3% | 3.90% | 0.0068 |
 
 **Distribution over seeds, not a single run.** Of 20 initialisations, 16 reached
 the plateau criterion:
@@ -264,7 +263,7 @@ R² = 0.99536, the highest of the campaign. Dead runs: zero.
 | | OTM | ATM | ITM |
 |---|---|---|---|
 | ⟨Z₀⟩ | 0.98466 | 0.98378 | 0.97308 |
-| ⟨Z₀⟩, ⟨Z₁⟩, ⟨Z₀Z₁⟩ | 0.99259 | 0.99194 | **0.99275** |
+| ⟨Z₀⟩, ⟨Z₁⟩, ⟨Z₀Z₁⟩ | 0.99259 | 0.99194 | 0.99275 |
 
 **The five hardware benchmark points** (T = 1, r = 0.05, σ = 0.2):
 
