@@ -289,7 +289,7 @@ end
 #
 #     model                      params   R^2 over seeds
 #     OLS                             5   0.96154  (deterministic)
-#     Fourier ridge (B)              41   0.97212  (deterministic)
+#     Fourier ridge (B)              41   0.97210  (deterministic)
 #     XGBoost                         -   0.98459 +/- 0.00190   (5 seeds)
 #     quantum, published readout     36   0.98721  (single released vector)
 #     quantum, multi readout         40   0.99188 +/- 0.00298  (20 seeds)
@@ -309,8 +309,8 @@ function reproduce(; traindir = "data", evalfile = "data/bs_eval_10000.csv")
     tr = load_set(joinpath(traindir, "bs_train.csv"))
     isfile(evalfile) || error("""
         Missing $evalfile.
-        Export it once from the generating environment, or substitute
-        bs_test.csv to run against the smaller N=100 set.""")
+        Export it once from the generating environment. Every figure reported
+        in the paper and here is on this 10,000-point set.""")
     te = load_set(evalfile)
     Xtr, ytr = features(tr), tr.price
     Xte, yte = features(te), te.price

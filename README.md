@@ -256,19 +256,17 @@ R² = 0.99223 ± 0.00201      (min 0.98590, max 0.99536)
 one-sample t against the released vector:  t = +10.02
 ```
 
-The remaining four runs are **not failures**: they exhausted a 40-epoch budget
-without diverging or collapsing. One of them reached R² = 0.99536, the highest
-of the whole campaign. Dead runs: **zero**.
+The remaining four exhausted the 40-epoch budget; one of them reached
+R² = 0.99536, the highest of the campaign. Dead runs: zero.
 
-**By moneyness regime.** Quality is now level across the domain:
+**By moneyness regime.**
 
 | | OTM | ATM | ITM |
 |---|---|---|---|
 | released | 0.98466 | 0.98378 | 0.97308 |
 | multi | 0.99259 | 0.99194 | **0.99275** |
 
-**The five hardware benchmark points** (T = 1, r = 0.05, σ = 0.2), the hardest
-region of the domain because price curvature peaks there:
+**The five hardware benchmark points** (T = 1, r = 0.05, σ = 0.2):
 
 | m | Black-Scholes | multi | error [pts] | released, error [pts] |
 |---|---|---|---|---|
@@ -278,20 +276,16 @@ region of the domain because price curvature peaks there:
 | 1.10 | 0.176630 | 0.188453 | 3.15 | 5.50 |
 | 1.20 | 0.261690 | 0.267899 | 1.65 | 2.61 |
 
-Mean **2.27 pts** against **4.04 pts**. Note that the error at these five points
-is about 1.5x the average over the full evaluation set (1.53 pts), which is why
-a global R² and the errors observed on hardware differ in scale.
+Mean **2.27 pts** against **4.04 pts**.
 
-**Against the classical baselines**, on the same 100-point test set as the
-classical tables of the paper:
+**Against the classical baselines.** Table 9 of the paper, on the same
+evaluation set, with the multi-observable row added:
 
-| model | parameters | R² |
-|---|---|---|
-| OLS | 5 | 0.93291 |
-| XGBoost | — | 0.97854 |
-| released finQbit | 36 | 0.98696 |
-| **multi, best seed** | **40** | **0.99507** |
-| MLP 4→6 tanh→1 | 37 | 0.99491 ± 0.00214 |
-
-On this set the multi-observable readout matches a small neural network of
-comparable parameter count, at eight two-qubit gates.
+| model | par. | MSE | RMSE | MAE | R² |
+|---|---|---|---|---|---|
+| OLS | 5 | 0.00050 | 0.02237 | 0.01626 | 0.96154 |
+| Fourier ridge | 41 | 0.00036 | 0.01905 | — | 0.97210 |
+| XGBoost | — | 0.00020 ± 0.00002 | 0.01414 ± 0.00087 | 0.01104 ± 0.00058 | 0.98459 ± 0.00190 |
+| released finQbit | 36 | 0.00017 | 0.01290 | 0.00965 | 0.98721 |
+| multi, best seed | 40 | 0.00006 | 0.00784 | 0.00574 | 0.99527 |
+| MLP | 37 | 0.00005 ± 0.00003 | 0.00701 ± 0.00173 | 0.00488 ± 0.00125 | 0.99604 ± 0.00203 |
