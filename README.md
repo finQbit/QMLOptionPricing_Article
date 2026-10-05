@@ -143,19 +143,6 @@ need not be retrained to reproduce the paper's tables.
 - Budget: 20 outer epochs of at most 20 inner iterations.
 - Training set: `data/bs_train.csv`, 500 points.
 
-Two caveats are stated in the paper and repeated here because they bear on any
-attempt to retrain:
-
-1. The released parameter vector was obtained with an iteratively tuned schedule
-   that was continued until test performance exceeded the XGBoost baseline. That
-   margin was therefore a stopping criterion, not an independent outcome, and no
-   comparative claim in the revised paper rests on it.
-2. Training from random initialisations fails outright in a substantial fraction
-   of attempts. The rectifier admits an absorbing region in which the circuit
-   output is identically zero on the whole domain; the gradient there is exactly
-   zero and the run cannot recover. This happens both at initialisation and, less
-   obviously, part-way through training. The paper reports the observed rate.
-
 ## 6. Files in this release
 
 | path | contents |
