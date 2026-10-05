@@ -240,6 +240,70 @@ end
 #
 # For reference, the quantum model scores R^2 = 0.98721, MAE = 0.00965 on the
 # same set.
+#
+# ---------------------------------------------------------------------------
+# ERRATUM: second quantum parameter set (multi-observable readout)
+# ---------------------------------------------------------------------------
+# Nothing above changes. The published quantum row stands and is still
+# reproduced by finqbit_parameters.txt. This note records a SECOND trained
+# parameter set, finqbit_multi_parameters.txt, added after review, so that the
+# classical rows can be read against it as well.
+#
+# Same ansatz, same depth, same 8 CX gates. The only difference is the readout:
+# both qubits are measured and three expectation values are formed from the one
+# measurement record -- <Z0>, <Z1> and the correlator <Z0Z1> -- then combined by
+# a linear head applied after measurement,
+#
+#     C/K = max(0, b + w_Z0*<Z0> + w_Z1*<Z1> + w_Z0Z1*<Z0Z1>)
+#
+# This costs no extra gates and no extra shots; the three numbers are already
+# present in any two-qubit measurement record. Parameter count 36 -> 40.
+#
+# The readout itself is not new work. It was established first on the Heston
+# basket models and carried over; what is measured here is what it is worth on
+# Black-Scholes, where a full seed campaign is cheap enough to run.
+#
+# TRAINING AND EVALUATION DATA ARE THE PUBLISHED ONES:
+#
+#     training    bs_train.csv         500 rows, all of them
+#     monitoring  bs_monitor_200.csv   200 rows, stopping criterion only,
+#                                      disjoint from training and evaluation
+#     evaluation  bs_eval_10000.csv    10 000 rows, touched once
+#
+# The monitoring set is the one addition, released with this erratum. The
+# published run used a split of the training file for the same purpose; a
+# separate file keeps the stopping criterion clear of the training data.
+#
+# Shipped vector (finqbit_multi_parameters.txt), on bs_eval_10000.csv:
+#
+#     R^2 = 0.99527   MAE = 0.00574   MSE = 0.0000615
+#
+# Over 20 training seeds, every seed trained and evaluated identically:
+#
+#     R^2  = 0.99188 +/- 0.00298   (median 0.99258, range 0.98321 - 0.99594)
+#     MAE  = 0.00728 +/- 0.00139
+#     dead or degenerate runs: 0 of 20
+#     stopped on plateau 16, on the epoch limit 4
+#
+# HOW THIS COMPARES, stated as distributions rather than best runs:
+#
+#     model                      params   R^2 over seeds
+#     OLS                             5   0.96154  (deterministic)
+#     Fourier ridge (B)              41   0.97212  (deterministic)
+#     XGBoost                         -   0.98459 +/- 0.00190   (5 seeds)
+#     quantum, published readout     36   0.98721  (single released vector)
+#     quantum, multi readout         40   0.99188 +/- 0.00298  (20 seeds)
+#     MLP                            37   0.99604 +/- 0.00203   (5 seeds)
+#
+# Read this carefully. The multi-observable readout moves the quantum model
+# past XGBoost and past the Fourier ridge that reproduces its own frequency
+# support, which is the comparison review asked for. It does NOT overtake the
+# parameter-matched MLP: the MLP mean is higher, and although the two bands
+# overlap, 20 seeds against 5 is not enough to call the difference either way.
+#
+# The shipped vector's 0.99527 must not be read against the MLP mean. It is one
+# selected run out of 20; the MLP figure is an average over 5. The honest
+# comparison is the distribution line above.
 
 function reproduce(; traindir = "data", evalfile = "data/bs_eval_10000.csv")
     tr = load_set(joinpath(traindir, "bs_train.csv"))
